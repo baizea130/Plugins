@@ -11,7 +11,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 public class PlayerPrefs管理器 : EditorWindow
 {
-    private string key;
     private string[] options = { "int", "float", "string" };
     private string enter_key;
     private int num_int;
@@ -30,25 +29,23 @@ public class PlayerPrefs管理器 : EditorWindow
     }
     private void OnGUI()
     {
-        GUILayout.Label("查看键值：\n输入键值以获取数据", EditorStyles.label);
-        key = EditorGUILayout.TextField("输入playerprefs标签：", key);
-        if (!PlayerPrefs.HasKey(key))
+        GUILayout.Label("输入键值以获取数据", EditorStyles.label);
+        enter_key = EditorGUILayout.TextField("想设置的playerprefs标签：", enter_key);
+        if (!PlayerPrefs.HasKey(enter_key))
         {
             GUI.contentColor = Color.yellow;
-            GUILayout.Label("不存在此键值");
+            GUILayout.Label("不存在此键值,可在下方输入数据以创建");
             GUI.contentColor = Color.white;
         }
         else
         {
-            GUILayout.Label("int类型下值为: " + PlayerPrefs.GetInt(key).ToString(), EditorStyles.boldLabel);
-            GUILayout.Label("float类型下值为: " + PlayerPrefs.GetFloat(key).ToString(), EditorStyles.boldLabel);
-            GUILayout.Label("string类型下值为: " + PlayerPrefs.GetString(key).ToString(), EditorStyles.boldLabel);
+            GUILayout.Label("int类型下值为: " + PlayerPrefs.GetInt(enter_key).ToString(), EditorStyles.boldLabel);
+            GUILayout.Label("float类型下值为: " + PlayerPrefs.GetFloat(enter_key).ToString(), EditorStyles.boldLabel);
+            GUILayout.Label("string类型下值为: " + PlayerPrefs.GetString(enter_key).ToString(), EditorStyles.boldLabel);
             GUI.contentColor = Color.yellow;
             GUILayout.Label("请自行辨别正确的类型!");
             GUI.contentColor = Color.white;
         }
-        GUILayout.Label("\n\n创建或修改键值：", EditorStyles.label);
-        enter_key = EditorGUILayout.TextField("想设置的playerprefs标签：", enter_key);
         if (PlayerPrefs.HasKey(enter_key))
         {
             GUI.contentColor = Color.yellow;
@@ -176,10 +173,10 @@ public class 场景管理器 : EditorWindow
         }
     }
 }
-
-// 使用 [CustomEditor] 标记为通用编辑器扩展
+//使用 [CustomEditor] 标记为通用编辑器扩展
 [CustomEditor(typeof(MonoBehaviour), true)]
-public class AutoAssignComponentEditor : Editor
+
+public class ExternScript : Editor
 {
     private string[] options = { "自身", "父物体"};
     private enum SearchType
@@ -191,17 +188,14 @@ public class AutoAssignComponentEditor : Editor
     {
         // 绘制默认的 Inspector GUI
         base.OnInspectorGUI();
-
         // 添加自定义按钮
         GUILayout.BeginHorizontal();
         GUIStyle style = new GUIStyle(GUI.skin.button);
         style.normal.textColor = Color.yellow;
         if (GUILayout.Button("自动检测并赋值组件",style))
         {
-            // 获取目标脚本实例
             MonoBehaviour targetScript = target as MonoBehaviour;
             Debug.Log(Type);
-            // 检测并赋值
             DetectAndAssignComponents(targetScript, Type);
         }
         Type = (SearchType)EditorGUILayout.Popup("检测范围：", (int)Type, options, GUILayout.MinWidth(200));

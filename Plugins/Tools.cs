@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -172,6 +173,76 @@ public class 场景管理器 : EditorWindow
             string sceneName = Path.GetFileNameWithoutExtension(scene.path);
             sceneNames.Add(sceneName);
             scenePath.Add(scene.path);
+        }
+    }
+}
+
+// 使用 [CustomEditor] 标记为通用编辑器扩展
+[CustomEditor(typeof(MonoBehaviour), true)]
+public class AutoAssignComponentEditor : Editor
+{
+    private string[] options = { "自身", "父物体"};
+    private enum SearchType
+    {
+        Self, Parent
+    }
+    private SearchType Type;
+    public override void OnInspectorGUI()
+    {
+        // 绘制默认的 Inspector GUI
+        base.OnInspectorGUI();
+
+        // 添加自定义按钮
+        GUILayout.BeginHorizontal();
+        GUIStyle style = new GUIStyle(GUI.skin.button);
+        style.normal.textColor = Color.yellow;
+        if (GUILayout.Button("自动检测并赋值组件",style))
+        {
+            // 获取目标脚本实例
+            MonoBehaviour targetScript = target as MonoBehaviour;
+            Debug.Log(Type);
+            // 检测并赋值
+            DetectAndAssignComponents(targetScript, Type);
+        }
+        Type = (SearchType)EditorGUILayout.Popup("检测范围：", (int)Type, options, GUILayout.MinWidth(200));
+
+        GUILayout.EndHorizontal();
+    }
+
+    private void DetectAndAssignComponents(MonoBehaviour targetScript, SearchType type)
+    {
+        GameObject target = targetScript.gameObject;
+        switch (type)
+        {
+            case SearchType.Self:
+                target = targetScript.gameObject;
+                break;
+            case SearchType.Parent:
+                target = targetScript.gameObject.transform.parent.gameObject;
+                break;
+        }
+
+        // 遍历脚本中的所有字段
+        var fields = targetScript.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        foreach (var field in fields)
+        {
+            // 检查字段是否是 Component 类型
+            if (typeof(Component).IsAssignableFrom(field.FieldType))
+            {
+                // 获取字段的当前值
+                Component currentValue = field.GetValue(targetScript) as Component;
+
+                // 如果字段为空，则尝试从游戏对象上获取组件并赋值
+                if (currentValue == null)
+                {
+                    Component component = target.GetComponent(field.FieldType);
+                    if (component != null)
+                    {
+                        field.SetValue(targetScript, component);
+                        Debug.Log($"为脚本 {targetScript.GetType().Name} 中的字段 {field.Name} 赋值了组件 {component.name}");
+                    }
+                }
+            }
         }
     }
 }
